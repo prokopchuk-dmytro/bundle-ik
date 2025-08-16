@@ -24,7 +24,7 @@ function BundleManager() {
   useEffect(() => {
     (async () => {
       if (!productId) return;
-      const resp = await fetch(`/api/bundle.metafield`, {
+      const resp = await fetch(`/api/bundle/metafield`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ productId }),
@@ -32,7 +32,7 @@ function BundleManager() {
       const json = await resp.json();
       const arr = Array.isArray(json?.components) ? json.components : [];
       // We need titles, fetch via search for now
-      const titlesResp = await fetch(`/api/products.lookup`, {
+      const titlesResp = await fetch(`/api/products/lookup`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: arr.map((c:any)=>c.merchandiseId) })
       });
       const titles = await titlesResp.json();
@@ -42,7 +42,7 @@ function BundleManager() {
 
   useEffect(() => {
     (async () => {
-      const resp = await fetch(`/api/products.search`, {
+      const resp = await fetch(`/api/products/search`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query: '' }),
@@ -61,7 +61,7 @@ function BundleManager() {
 
   const save = async () => {
     if (!productId) return;
-    await fetch(`/api/bundle.metafield.update`, {
+    await fetch(`/api/bundle/metafield/update`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
