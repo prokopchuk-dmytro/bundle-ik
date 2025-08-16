@@ -9,7 +9,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
     components: Array<{ merchandiseId: string; quantity: number; price?: number }>;
   };
 
-  const value = JSON.stringify(components);
+  const value = JSON.stringify(components || []);
   const query = /* GraphQL */ `
     mutation UpsertMetafield($ownerId: ID!, $namespace: String!, $key: String!, $value: String!) {
       metafieldsSet(metafields: [{ ownerId: $ownerId, namespace: $namespace, key: $key, type: "json", value: $value }]) {

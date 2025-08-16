@@ -18,7 +18,7 @@ export async function adminGraphQL<T>(shop: string, accessToken: string, query: 
   });
   const json = await resp.json();
   if (json.errors) throw new Error(JSON.stringify(json.errors));
-  const ue = json.data?.productBundleCreate?.userErrors || json.data?.productBundleUpdate?.userErrors;
+  const ue = json.data?.productBundleCreate?.userErrors || json.data?.productBundleUpdate?.userErrors || json.data?.metafieldsSet?.userErrors || json.data?.productCreate?.userErrors;
   if (ue?.length) throw new Error(JSON.stringify(ue));
   return json as T;
 }
@@ -57,6 +57,18 @@ query ProductsSearch($query: String!) {
     edges { node { id title status variants(first: 1) { edges { node { id } } } } }
   }
 }`;
+
+export const PRODUCT_LOOKUP_TITLES = /* GraphQL */ `
+  query ProductLookupTitles($ids: [ID!]!) {
+    nodes(ids: $ids) { ... on ProductVariant { id title product { title } } ... on Product { id title } }
+  }
+`;
+
+export const PRODUCTS_SIMPLE_SEARCH = /* GraphQL */ `
+  query ProductsSimpleSearch($query: String!) {
+    products(first: 50, query: $query) { edges { node { id title variants(first:1){edges{node{id}}} } } }
+  }
+`;
 
 const shopify = shopifyApp({
   apiKey: process.env.SHOPIFY_API_KEY,
