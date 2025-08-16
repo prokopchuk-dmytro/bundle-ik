@@ -8,7 +8,6 @@ import {
 	TextField,
 	Divider,
 	useApi,
-	BlockStack,
 } from "@shopify/ui-extensions-react/admin";
 import { useEffect, useMemo, useState } from "react";
 
@@ -17,21 +16,20 @@ interface ComponentRow { id: string; title: string; quantity: number }
 export default reactExtension("admin.product-details.block.render", () => <BundleManager />);
 
 function BundleManager() {
-	const api = useApi();
+	const { data, admin } = useApi();
 	const [components, setComponents] = useState<ComponentRow[]>([]);
 	const [availableProducts, setAvailableProducts] = useState<ComponentRow[]>([]);
-	const productId = api.data?.selected?.product?.id;
+	const productId = data?.selected?.product?.id;
 	const [search, setSearch] = useState("");
 	const [loadingComponents, setLoadingComponents] = useState(false);
 	const [loadingSearch, setLoadingSearch] = useState(false);
 
-	// Read bundle components metafield directly via Admin GraphQL
 	useEffect(() => {
 		(async () => {
-			if (!productId || !api.admin) return;
+			if (!productId || !admin) return;
 			setLoadingComponents(true);
 			try {
-				const res: any = await api.admin.request(
+				const res: any = await admin.request(
 					`query ProductBundle($id: ID!) {\n  product(id: $id) {\n    id\n    title\n    metafield(namespace: \"bundle\", key: \"components\") { value }\n  }\n}`,
 					{ variables: { id: productId } }
 				);
@@ -39,11 +37,10 @@ function BundleManager() {
 				let arr: any[] = [];
 				try { arr = JSON.parse(value || '[]'); } catch { arr = []; }
 
-				// Try resolve titles of existing components
 				let titlesMap: Record<string, string> = {};
 				if (arr.length) {
 					const ids = arr.map((c:any) => c.merchandiseId).filter(Boolean);
-					const lookup: any = await api.admin.request(
+					const lookup: any = await admin.request(
 						`query Lookup($ids:[ID!]!) { nodes(ids:$ids) { __typename ... on ProductVariant { id title product{ title } } ... on Product { id title } } }`,
 						{ variables: { ids } }
 					);
@@ -57,17 +54,16 @@ function BundleManager() {
 				setLoadingComponents(false);
 			}
 		})();
-	}, [productId, api.admin]);
+	}, [productId, admin]);
 
-	// Load available products by search (use first variant ID when present)
 	useEffect(() => {
 		(async () => {
-			if (!api.admin) return;
+			if (!admin) return;
 			setLoadingSearch(true);
 			try {
-				const res: any = await api.admin.request(
-					`query Products($q: String!) {\n  products(first: 50, query: $q) { edges { node { id title variants(first:1){ edges{ node{ id title } } } } } }\n}`,
-					{ variables: { q: search || "" } }
+				const res: any = await admin.request(
+					`query Products($q: String) {\n  products(first: 50, query: $q) { edges { node { id title variants(first:1){ edges{ node{ id title } } } } } }\n}`,
+					{ variables: { q: search || null } }
 				);
 				const edges = res?.data?.products?.edges || [];
 				const items = edges.map((e:any) => ({ id: e.node?.variants?.edges?.[0]?.node?.id || e.node.id, title: e.node.title }));
@@ -76,7 +72,7 @@ function BundleManager() {
 				setLoadingSearch(false);
 			}
 		})();
-	}, [components, api.admin, search]);
+	}, [components, admin, search]);
 
 	const totalItems = useMemo(() => components.reduce((acc, c) => acc + (c.quantity || 0), 0), [components]);
 
@@ -86,9 +82,9 @@ function BundleManager() {
 	const clearAll = () => setComponents([]);
 
 	const save = async () => {
-		if (!productId || !api.admin) return;
+		if (!productId || !admin) return;
 		const payload = components.map(c => ({ merchandiseId: c.id, quantity: Math.max(1, Number(c.quantity || 1)) }));
-		await api.admin.request(
+		await admin.request(
 			`mutation SetMf($ownerId: ID!, $value: String!) {\n  metafieldsSet(metafields:[{ ownerId: $ownerId, namespace: \"bundle\", key: \"components\", type: \"json\", value: $value }]) { metafields { id } userErrors { field message } }\n}`,
 			{ variables: { ownerId: productId, value: JSON.stringify(payload) } }
 		);
@@ -96,59 +92,57 @@ function BundleManager() {
 
 	return (
 		<AdminBlock title="Bundle components">
-			<BlockStack>
-				<InlineStack align="space-between">
-					<Text>Total items in bundle: {totalItems}</Text>
-					<InlineStack>
-						<Button kind="secondary" onPress={clearAll} disabled={components.length === 0}>Clear all</Button>
-						<Button kind="primary" onPress={save}>Save</Button>
-					</InlineStack>
+			<InlineStack align="space-between">
+				<Text>Total items in bundle: {totalItems}</Text>
+				<InlineStack>
+					<Button kind="secondary" onPress={clearAll} disabled={components.length === 0}>Clear all</Button>
+					<Button kind="primary" onPress={save}>Save</Button>
 				</InlineStack>
-				<Divider />
+			</InlineStack>
+			<Divider />
 
-				<Text>Current components</Text>
-				<Box padding="tight">
-					{loadingComponents && <Text appearance="subdued">Loading...</Text>}
-					{!loadingComponents && components.length === 0 && <Text appearance="subdued">No components yet.</Text>}
-					{components.map((c, idx) => (
-						<Box key={c.id}>
-							<InlineStack align="space-between">
-								<Text>{c.title}</Text>
-								<InlineStack>
-									<TextField
-										label="Qty"
-										type="number"
-										value={String(c.quantity)}
-										onChange={v => updateQuantity(c.id, Number(v))}
-										min={1}
-									/>
-									<Button kind="secondary" onPress={() => removeComponent(c.id)}>Remove</Button>
-								</InlineStack>
+			<Text>Current components</Text>
+			<Box padding="tight">
+				{loadingComponents && <Text appearance="subdued">Loading...</Text>}
+				{!loadingComponents && components.length === 0 && <Text appearance="subdued">No components yet.</Text>}
+				{components.map((c, idx) => (
+					<Box key={c.id}>
+						<InlineStack align="space-between">
+							<Text>{c.title}</Text>
+							<InlineStack>
+								<TextField
+									label="Qty"
+									type="number"
+									value={String(c.quantity)}
+									onChange={v => updateQuantity(c.id, Number(v))}
+									min={1}
+								/>
+								<Button kind="secondary" onPress={() => removeComponent(c.id)}>Remove</Button>
 							</InlineStack>
-							{idx < components.length - 1 && <Divider />}
-						</Box>
-					))}
-				</Box>
+						</InlineStack>
+						{idx < components.length - 1 && <Divider />}
+					</Box>
+				))}
+			</Box>
 
-				<Divider />
-				<Text>Add more products</Text>
-				<Box padding="tight">
-					<TextField label="Search" placeholder="Search products" value={search} onChange={setSearch} />
-				</Box>
-				<Box padding="tight">
-					{loadingSearch && <Text appearance="subdued">Searching...</Text>}
-					{!loadingSearch && availableProducts.length === 0 && <Text appearance="subdued">No products found.</Text>}
-					{availableProducts.map((p, idx) => (
-						<Box key={p.id}>
-							<InlineStack align="space-between">
-								<Text>{p.title}</Text>
-								<Button kind="primary" onPress={() => addComponent(p)}>Add</Button>
-							</InlineStack>
-							{idx < availableProducts.length - 1 && <Divider />}
-						</Box>
-					))}
-				</Box>
-			</BlockStack>
+			<Divider />
+			<Text>Add more products</Text>
+			<Box padding="tight">
+				<TextField label="Search" placeholder="Search products" value={search} onChange={(v)=>setSearch(v)} />
+			</Box>
+			<Box padding="tight">
+				{loadingSearch && <Text appearance="subdued">Searching...</Text>}
+				{!loadingSearch && availableProducts.length === 0 && <Text appearance="subdued">No products found.</Text>}
+				{availableProducts.map((p, idx) => (
+					<Box key={p.id}>
+						<InlineStack align="space-between">
+							<Text>{p.title}</Text>
+							<Button kind="primary" onPress={() => addComponent(p)}>Add</Button>
+						</InlineStack>
+						{idx < availableProducts.length - 1 && <Divider />}
+					</Box>
+				))}
+			</Box>
 		</AdminBlock>
 	);
 }
