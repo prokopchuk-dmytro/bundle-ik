@@ -24,42 +24,32 @@ function BundleManager() {
   useEffect(() => {
     (async () => {
       if (!productId) return;
-      // Fetch existing bundle components
-      const resp = await fetch(`/api/graphql`, {
+      const resp = await fetch(`/api/bundle/metafield`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          query: `query($id: ID!) {
-            product(id:$id) {
-              id
-              title
-              bundleComponents(first:100) {
-                edges { node { quantity product { id title } } }
-              }
-            }
-          }`,
-          variables: { id: productId },
-        }),
+        body: JSON.stringify({ productId }),
       });
       const json = await resp.json();
-      const edges = json?.data?.product?.bundleComponents?.edges || [];
-      setComponents(edges.map((e: any) => ({ id: e.node.product.id, title: e.node.product.title, quantity: e.node.quantity ?? 1 })));
+      const arr = Array.isArray(json?.components) ? json.components : [];
+      // We need titles, fetch via search for now
+      const titlesResp = await fetch(`/api/products/lookup`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: arr.map((c:any)=>c.merchandiseId) })
+      });
+      const titles = await titlesResp.json();
+      setComponents(arr.map((c:any) => ({ id: c.merchandiseId, title: titles[c.merchandiseId] || c.merchandiseId, quantity: c.quantity || 1 })));
     })();
   }, [productId]);
 
   useEffect(() => {
     (async () => {
-      // Fetch available products for selection (excluding already added)
-      const resp = await fetch(`/api/graphql`, {
+      const resp = await fetch(`/api/products/search`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          query: `query { products(first:50) { edges { node { id title } } } }`,
-        }),
+        body: JSON.stringify({ query: '' }),
       });
       const json = await resp.json();
-      const items = json?.data?.products?.edges?.map((e: any) => ({ id: e.node.id, title: e.node.title })) || [];
-      setAvailableProducts(items.filter(p => !components.find(c => c.id === p.id)));
+      const items = json?.products || [];
+      setAvailableProducts(items.filter((p:any) => !components.find(c => c.id === p.id)));
     })();
   }, [components]);
 
@@ -71,12 +61,12 @@ function BundleManager() {
 
   const save = async () => {
     if (!productId) return;
-    await fetch(`/api.bundle.update`, {
+    await fetch(`/api/bundle/metafield/update`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         productId,
-        components: components.map(c => ({ productId: c.id, quantity: Math.max(1, Number(c.quantity || 1)) })),
+        components: components.map(c => ({ merchandiseId: c.id, quantity: Math.max(1, Number(c.quantity || 1)) })),
       }),
     });
   };

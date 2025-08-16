@@ -3,6 +3,16 @@ query CartTransformRunInput {
     lines {
       id
       quantity
+      merchandise {
+        __typename
+        ... on ProductVariant {
+          id
+          metafield(namespace: "bundle", key: "components") { value }
+          product {
+            metafield(namespace: "bundle", key: "components") { value }
+          }
+        }
+      }
     }
   }
 }
