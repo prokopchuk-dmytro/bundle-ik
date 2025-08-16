@@ -26,14 +26,16 @@ function BundleManager() {
       if (!productId) return;
       const resp = await fetch(`/api/bundle/metafield`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ productId }),
       });
       const json = await resp.json();
       const arr = Array.isArray(json?.components) ? json.components : [];
       // We need titles, fetch via search for now
       const titlesResp = await fetch(`/api/products/lookup`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: arr.map((c:any)=>c.merchandiseId) })
+        method: 'POST',
+        credentials: 'include',
+        body: JSON.stringify({ ids: arr.map((c:any)=>c.merchandiseId) })
       });
       const titles = await titlesResp.json();
       setComponents(arr.map((c:any) => ({ id: c.merchandiseId, title: titles[c.merchandiseId] || c.merchandiseId, quantity: c.quantity || 1 })));
@@ -44,7 +46,7 @@ function BundleManager() {
     (async () => {
       const resp = await fetch(`/api/products/search`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ query: '' }),
       });
       const json = await resp.json();
@@ -63,7 +65,7 @@ function BundleManager() {
     if (!productId) return;
     await fetch(`/api/bundle/metafield/update`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify({
         productId,
         components: components.map(c => ({ merchandiseId: c.id, quantity: Math.max(1, Number(c.quantity || 1)) })),
