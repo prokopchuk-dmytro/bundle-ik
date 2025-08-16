@@ -28,6 +28,10 @@
     "@shopify/shopify_function": "2.0.0"
   },
   "devDependencies": {
-   "vitest": "2.1.9"
+   "vitest": "2.1.9",
+   "@graphql-codegen/cli": "^5.0.2",
+   "@graphql-codegen/typescript": "4.0.1",
+   "@graphql-codegen/typescript-operations": "4.5.0",
+   "graphql": "^16.8.1"
   }
 }

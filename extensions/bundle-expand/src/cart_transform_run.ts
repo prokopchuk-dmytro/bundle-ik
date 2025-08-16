@@ -57,3 +57,6 @@ export function cartTransformRun(input: CartTransformRunInput): CartTransformRun
   if (operations.length === 0) return NO_CHANGES;
   return { operations };
 };
+
+// Export default to ensure mapping to kebab-case name works for WASM export
+export default cartTransformRun;
