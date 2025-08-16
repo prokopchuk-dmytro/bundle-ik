@@ -1,0 +1,34 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "f46315c7c5390828c05a644681eb270c"
+name = "bundle-app"
+handle = "inventory-147"
+application_url = "https://broker-independent-johns-winning.trycloudflare.com"
+embedded = true
+
+[build]
+include_config_on_deploy = true
+automatically_update_urls_on_dev = true
+
+[webhooks]
+api_version = "2025-07"
+
+  [[webhooks.subscriptions]]
+  topics = [ "app/uninstalled" ]
+  uri = "/webhooks/app/uninstalled"
+
+  [[webhooks.subscriptions]]
+  topics = [ "app/scopes_update" ]
+  uri = "/webhooks/app/scopes_update"
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+
+scopes = "read_products,write_products,read_inventory,write_inventory,read_locations"
+
+
+[auth]
+redirect_urls = ["https://broker-independent-johns-winning.trycloudflare.com/auth/callback", "https://broker-independent-johns-winning.trycloudflare.com/auth/shopify/callback", "https://broker-independent-johns-winning.trycloudflare.com/api/auth/callback"]
+
+[pos]
+embedded = false
