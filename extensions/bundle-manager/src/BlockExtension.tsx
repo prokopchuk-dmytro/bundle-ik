@@ -20,6 +20,7 @@ function BundleManager() {
 	const [components, setComponents] = useState<ComponentRow[]>([]);
 	const [availableProducts, setAvailableProducts] = useState<ComponentRow[]>([]);
 	const productId = api.data?.selected?.product?.id;
+	const [search, setSearch] = useState("");
 
 	// Read bundle components metafield directly via Admin GraphQL
 	useEffect(() => {
@@ -50,18 +51,19 @@ function BundleManager() {
 		})();
 	}, [productId, api.admin]);
 
-	// Load available products (first 50, use first variant ID)
+	// Load available products by search (use first variant ID when present)
 	useEffect(() => {
 		(async () => {
 			if (!api.admin) return;
 			const res: any = await api.admin.request(
-				`query Products {\n  products(first: 50) { edges { node { id title variants(first:1){ edges{ node{ id title } } } } } }\n}`
+				`query Products($q: String!) {\n  products(first: 50, query: $q) { edges { node { id title variants(first:1){ edges{ node{ id title } } } } } }\n}`,
+				{ variables: { q: search || "" } }
 			);
 			const edges = res?.data?.products?.edges || [];
 			const items = edges.map((e:any) => ({ id: e.node?.variants?.edges?.[0]?.node?.id || e.node.id, title: e.node.title }));
 			setAvailableProducts(items.filter((p:any) => !components.find(c => c.id === p.id)));
 		})();
-	}, [components, api.admin]);
+	}, [components, api.admin, search]);
 
 	const totalItems = useMemo(() => components.reduce((acc, c) => acc + (c.quantity || 0), 0), [components]);
 
@@ -106,6 +108,9 @@ function BundleManager() {
 
 			<Divider />
 			<Text>Add more products:</Text>
+			<Box padding="tight">
+				<TextField label="Search" value={search} onChange={setSearch} />
+			</Box>
 			<Box padding="tight">
 				{availableProducts.map(p => (
 					<InlineStack key={p.id} align="space-between">
