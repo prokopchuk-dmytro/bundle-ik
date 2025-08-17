@@ -92,17 +92,25 @@ function BundleManager() {
 
 	return (
 		<AdminBlock title="Bundle components">
+			{/* Header */}
 			<InlineStack align="space-between">
-				<Text>Total items in bundle: {totalItems}</Text>
+				<Text>Total items: {totalItems}</Text>
 				<InlineStack>
-					<Button kind="secondary" onPress={clearAll} disabled={components.length === 0}>Clear all</Button>
+					<Button kind="secondary" onPress={clearAll} disabled={components.length === 0}>Clear</Button>
 					<Button kind="primary" onPress={save}>Save</Button>
 				</InlineStack>
 			</InlineStack>
 			<Divider />
 
-			<Text>Current components</Text>
+			{/* Search */}
 			<Box padding="tight">
+				<TextField label="Search products" placeholder="Start typing..." value={search} onChange={(v)=>setSearch(v)} />
+			</Box>
+			<Divider />
+
+			{/* Components list */}
+			<Text>Components</Text>
+			<Box padding="tight" maxBlockSize="240px" overflow="auto" borderWidth="025" borderRadius="200">
 				{loadingComponents && <Text appearance="subdued">Loading...</Text>}
 				{!loadingComponents && components.length === 0 && <Text appearance="subdued">No components yet.</Text>}
 				{components.map((c, idx) => (
@@ -110,13 +118,7 @@ function BundleManager() {
 						<InlineStack align="space-between">
 							<Text>{c.title}</Text>
 							<InlineStack>
-								<TextField
-									label="Qty"
-									type="number"
-									value={String(c.quantity)}
-									onChange={v => updateQuantity(c.id, Number(v))}
-									min={1}
-								/>
+								<TextField label="Qty" type="number" value={String(c.quantity)} onChange={v => updateQuantity(c.id, Number(v))} min={1} />
 								<Button kind="secondary" onPress={() => removeComponent(c.id)}>Remove</Button>
 							</InlineStack>
 						</InlineStack>
@@ -126,13 +128,11 @@ function BundleManager() {
 			</Box>
 
 			<Divider />
-			<Text>Add more products</Text>
-			<Box padding="tight">
-				<TextField label="Search" placeholder="Search products" value={search} onChange={(v)=>setSearch(v)} />
-			</Box>
-			<Box padding="tight">
+			{/* Search results */}
+			<Text>Results</Text>
+			<Box padding="tight" maxBlockSize="240px" overflow="auto" borderWidth="025" borderRadius="200">
 				{loadingSearch && <Text appearance="subdued">Searching...</Text>}
-				{!loadingSearch && availableProducts.length === 0 && <Text appearance="subdued">No products found.</Text>}
+				{!loadingSearch && availableProducts.length === 0 && <Text appearance="subdued">Nothing found</Text>}
 				{availableProducts.map((p, idx) => (
 					<Box key={p.id}>
 						<InlineStack align="space-between">
